@@ -32,7 +32,6 @@
 import hydra
 
 from omegaconf import DictConfig, OmegaConf
-from omegaconf import DictConfig, OmegaConf
 
 
 def preprocess_train_config(cfg, config_dict):
@@ -97,6 +96,11 @@ def launch_rlg_hydra(cfg: DictConfig):
     from isaacgymenvs.learning import amp_players
     from isaacgymenvs.learning import amp_models
     from isaacgymenvs.learning import amp_network_builder
+    # Stage 1: Skill training imports
+    from isaacgymenvs.learning import hand_continuous
+    from isaacgymenvs.learning import hand_players
+    from isaacgymenvs.learning import hand_models
+    from isaacgymenvs.learning import hand_network_builder
     import isaacgymenvs
 
 
@@ -189,6 +193,20 @@ def launch_rlg_hydra(cfg: DictConfig):
         runner.player_factory.register_builder('amp_continuous', lambda **kwargs : amp_players.AMPPlayerContinuous(**kwargs))
         model_builder.register_model('continuous_amp', lambda network, **kwargs : amp_models.ModelAMPContinuous(network))
         model_builder.register_network('amp', lambda **kwargs : amp_network_builder.AMPBuilder())
+
+        # Stage 1: Skill training
+        # Training Agent
+        runner.algo_factory.register_builder("hand_continuous", lambda **kwargs: hand_continuous.HandAgent(**kwargs))
+        # Player
+        runner.player_factory.register_builder(
+            "hand_continuous", lambda **kwargs: hand_players.HandPlayerContinuous(**kwargs)
+        )
+        # Model
+        model_builder.register_model(
+            "continuous_hand", lambda network, **kwargs: hand_models.ModelCommonContinuous(network)
+        )
+        # Network
+        model_builder.register_network("hand", lambda **kwargs: hand_network_builder.HandBuilder())
 
         return runner
 

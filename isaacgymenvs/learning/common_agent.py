@@ -29,6 +29,7 @@
 import copy
 from datetime import datetime
 from gym import spaces
+import gym
 import numpy as np
 import os
 import time
@@ -38,12 +39,13 @@ from rl_games.algos_torch import a2c_continuous
 from rl_games.algos_torch import torch_ext
 from rl_games.algos_torch import central_value
 from rl_games.algos_torch.running_mean_std import RunningMeanStd
-from rl_games.common import a2c_common
+from rl_games.common import a2c_common, common_losses
 from rl_games.common import datasets
 from rl_games.common import schedulers
 from rl_games.common import vecenv
 
 import torch
+from rl_games.common.diagnostics import DefaultDiagnostics
 from torch import optim
 
 from . import amp_datasets as amp_datasets
@@ -52,10 +54,216 @@ from tensorboardX import SummaryWriter
 
 
 class CommonAgent(a2c_continuous.A2CAgent):
-
     def __init__(self, base_name, params):
-    
-        a2c_common.A2CBase.__init__(self, base_name, params)
+
+        self.config = config = params['config']
+        pbt_str = ''
+        self.population_based_training = config.get('population_based_training', False)
+        if self.population_based_training:
+            # in PBT, make sure experiment name contains a unique id of the policy within a population
+            pbt_str = f'_pbt_{config["pbt_idx"]:02d}'
+        # This helps in PBT when we need to restart an experiment with the exact same name, rather than
+        # generating a new name with the timestamp every time.
+        full_experiment_name = config.get('full_experiment_name', None)
+        if full_experiment_name:
+            print(f'Exact experiment name requested from command line: {full_experiment_name}')
+            self.experiment_name = full_experiment_name
+        else:
+            self.experiment_name = config['name'] + pbt_str + datetime.now().strftime("_%d-%H-%M-%S")
+        self.config = config
+        self.algo_observer = config['features']['observer']
+        self.algo_observer.before_init(base_name, config, self.experiment_name)
+        self.load_networks(params)
+        self.multi_gpu = config.get('multi_gpu', False)
+        # multi-gpu/multi-node data
+        self.local_rank = 0
+        self.global_rank = 0
+        self.world_size = 1
+        self.curr_frames = 0
+        if self.multi_gpu:
+            # local rank of the GPU in a node
+            self.local_rank = int(os.getenv("LOCAL_RANK", "0"))
+            # global rank of the GPU
+            self.global_rank = int(os.getenv("RANK", "0"))
+            # total number of GPUs across all nodes
+            self.world_size = int(os.getenv("WORLD_SIZE", "1"))
+            dist.init_process_group("nccl", rank=self.global_rank, world_size=self.world_size)
+            self.device_name = 'cuda:' + str(self.local_rank)
+            config['device'] = self.device_name
+            if self.global_rank != 0:
+                config['print_stats'] = False
+                config['lr_schedule'] = None
+        self.use_diagnostics = config.get('use_diagnostics', False)
+        if self.use_diagnostics and self.global_rank == 0:
+            self.diagnostics = PpoDiagnostics()
+        else:
+            self.diagnostics = DefaultDiagnostics()
+        self.network_path = config.get('network_path', "./nn/")
+        self.log_path = config.get('log_path', "runs/")
+        self.env_config = config.get('env_config', {})
+        self.num_actors = config['num_actors']
+        self.env_name = config['env_name']
+        self.vec_env = None
+        self.env_info = config.get('env_info')
+        if self.env_info is None:
+            self.vec_env = vecenv.create_vec_env(self.env_name, self.num_actors, **self.env_config)
+            self.env_info = self.vec_env.get_env_info()
+        else:
+            self.vec_env = config.get('vec_env', None)
+        self.ppo_device = config.get('device', 'cuda:0')
+        self.value_size = self.env_info.get('value_size', 1)
+        self.observation_space = self.env_info['observation_space']
+        self.weight_decay = config.get('weight_decay', 0.0)
+        self.use_action_masks = config.get('use_action_masks', False)
+        self.is_train = config.get('is_train', True)
+        self.central_value_config = self.config.get('central_value_config', None)
+        self.has_central_value = self.central_value_config is not None
+        self.truncate_grads = self.config.get('truncate_grads', False)
+        if self.has_central_value:
+            self.state_space = self.env_info.get('state_space', None)
+            if isinstance(self.state_space, gym.spaces.Dict):
+                self.state_shape = {}
+                for k, v in self.state_space.spaces.items():
+                    self.state_shape[k] = v.shape
+            else:
+                self.state_shape = self.state_space.shape
+        self.self_play_config = self.config.get('self_play_config', None)
+        self.has_self_play_config = self.self_play_config is not None
+        self.self_play = config.get('self_play', False)
+        self.save_freq = config.get('save_frequency', 0)
+        self.save_best_after = config.get('save_best_after', 100)
+        self.print_stats = config.get('print_stats', True)
+        self.rnn_states = None
+        self.name = base_name
+        # TODO: do we still need it?
+        self.ppo = config.get('ppo', True)
+        self.max_epochs = self.config.get('max_epochs', -1)
+        self.max_frames = self.config.get('max_frames', -1)
+        self.is_adaptive_lr = config['lr_schedule'] == 'adaptive'
+        self.linear_lr = config['lr_schedule'] == 'linear'
+        self.schedule_type = config.get('schedule_type', 'legacy')
+        # Setting learning rate scheduler
+        if self.is_adaptive_lr:
+            self.kl_threshold = config['kl_threshold']
+            self.scheduler = schedulers.AdaptiveScheduler(self.kl_threshold)
+        elif self.linear_lr:
+
+            if self.max_epochs == -1 and self.max_frames == -1:
+                print(
+                    "Max epochs and max frames are not set. Linear learning rate schedule can't be used, switching to the contstant (identity) one.")
+                self.scheduler = schedulers.IdentityScheduler()
+            else:
+                use_epochs = True
+                max_steps = self.max_epochs
+                if self.max_epochs == -1:
+                    use_epochs = False
+                    max_steps = self.max_frames
+                self.scheduler = schedulers.LinearScheduler(float(config['learning_rate']),
+                                                            max_steps=max_steps,
+                                                            use_epochs=use_epochs,
+                                                            apply_to_entropy=config.get('schedule_entropy', False),
+                                                            start_entropy_coef=config.get('entropy_coef'))
+        else:
+            self.scheduler = schedulers.IdentityScheduler()
+        self.e_clip = config['e_clip']
+        self.clip_value = config['clip_value']
+        self.network = config['network']
+        self.rewards_shaper = config['reward_shaper']
+        self.num_agents = self.env_info.get('agents', 1)
+        self.horizon_length = config['horizon_length']
+        # seq_length is used only with rnn policy and value functions
+        if 'seq_len' in config:
+            print('WARNING: seq_len is deprecated, use seq_length instead')
+        self.seq_length = self.config.get('seq_length', 4)
+        print('seq_length:', self.seq_length)
+        self.bptt_len = self.config.get('bptt_length',
+                                        self.seq_length)  # not used right now. Didn't show that it is usefull
+        self.zero_rnn_on_done = self.config.get('zero_rnn_on_done', True)
+        self.normalize_advantage = config['normalize_advantage']
+        self.normalize_rms_advantage = config.get('normalize_rms_advantage', False)
+        self.normalize_input = self.config['normalize_input']
+        self.normalize_value = self.config.get('normalize_value', False)
+        self.truncate_grads = self.config.get('truncate_grads', False)
+        if isinstance(self.observation_space, gym.spaces.Dict):
+            self.obs_shape = {}
+            for k, v in self.observation_space.spaces.items():
+                self.obs_shape[k] = v.shape
+        else:
+            self.obs_shape = self.observation_space.shape
+
+        self.critic_coef = config['critic_coef']
+        self.grad_norm = config['grad_norm']
+        self.gamma = self.config['gamma']
+        self.tau = self.config['tau']
+        self.games_to_track = self.config.get('games_to_track', 100)
+        print('current training device:', self.ppo_device)
+        self.game_rewards = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+        self.game_shaped_rewards = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+        self.game_lengths = torch_ext.AverageMeter(1, self.games_to_track).to(self.ppo_device)
+        self.obs = None
+        self.games_num = self.config[
+                             'minibatch_size'] // self.seq_length  # it is used only for current rnn implementation
+        self.batch_size = self.horizon_length * self.num_actors
+        self.batch_size_envs = self.horizon_length * self.num_actors
+        assert (('minibatch_size_per_env' in self.config) or ('minibatch_size' in self.config))
+        self.minibatch_size_per_env = self.config.get('minibatch_size_per_env', 0)
+        self.minibatch_size = self.config.get('minibatch_size', self.num_actors * self.minibatch_size_per_env)
+        self.num_minibatches = self.batch_size // self.minibatch_size
+        assert (self.batch_size % self.minibatch_size == 0)
+        self.mini_epochs_num = self.config['mini_epochs']
+        self.mixed_precision = self.config.get('mixed_precision', False)
+        self.discs_scaler = torch.cuda.amp.GradScaler(enabled=self.mixed_precision)
+        self.actor_scaler = torch.cuda.amp.GradScaler(enabled=self.mixed_precision)
+        self.critic_scaler = torch.cuda.amp.GradScaler(enabled=self.mixed_precision)
+        self.last_lr = self.config['learning_rate']
+        self.frame = 0
+        self.update_time = 0
+        self.mean_rewards = self.last_mean_rewards = -1000000000
+        self.play_time = 0
+        self.epoch_num = 0
+        self.curr_frames = 0
+        # allows us to specify a folder where all experiments will reside
+        self.train_dir = config.get('train_dir', 'runs')
+        # a folder inside of train_dir containing everything related to a particular experiment
+        self.experiment_dir = os.path.join(self.train_dir, self.experiment_name)
+        # folders inside <train_dir>/<experiment_dir> for a specific purpose
+        self.nn_dir = os.path.join(self.experiment_dir, 'nn')
+        self.summaries_dir = os.path.join(self.experiment_dir, 'summaries')
+        os.makedirs(self.train_dir, exist_ok=True)
+        os.makedirs(self.experiment_dir, exist_ok=True)
+        os.makedirs(self.nn_dir, exist_ok=True)
+        os.makedirs(self.summaries_dir, exist_ok=True)
+        self.entropy_coef = self.config['entropy_coef']
+        if self.global_rank == 0:
+            writer = SummaryWriter(self.summaries_dir)
+            if self.population_based_training:
+                self.writer = IntervalSummaryWriter(writer, self.config)
+            else:
+                self.writer = writer
+        else:
+            self.writer = None
+        self.value_bootstrap = self.config.get('value_bootstrap')
+        self.use_smooth_clamp = self.config.get('use_smooth_clamp', False)
+        if self.use_smooth_clamp:
+            self.actor_loss_func = common_losses.smoothed_actor_loss
+        else:
+            self.actor_loss_func = common_losses.actor_loss
+        if self.normalize_advantage and self.normalize_rms_advantage:
+            momentum = self.config.get('adv_rms_momentum', 0.5)
+            self.advantage_mean_std = GeneralizedMovingStats((1,), momentum=momentum).to(self.ppo_device)
+        self.is_tensor_obses = False
+        self.last_rnn_indices = None
+        self.last_state_indices = None
+        # self_play
+        if self.has_self_play_config:
+            print('Initializing SelfPlay Manager')
+            self.self_play_manager = SelfPlayManager(self.self_play_config, self.writer)
+        # features
+        self.algo_observer = config['features']['observer']
+        self.soft_aug = config['features'].get('soft_augmentation', None)
+        self.has_soft_aug = self.soft_aug is not None
+        # soft augmentation not yet supported
+        assert not self.has_soft_aug
 
         config = params['config']
         self._load_config_params(config)
@@ -74,8 +282,22 @@ class CommonAgent(a2c_continuous.A2CAgent):
 
         self.init_rnn_from_model(self.model)
         self.last_lr = float(self.last_lr)
+        self.seq_len = config['seq_len']
 
-        self.optimizer = optim.Adam(self.model.parameters(), float(self.last_lr), eps=1e-08, weight_decay=self.weight_decay)
+        self.actor_optimizer = optim.Adam(
+            list(self.model.a2c_network.actor_mlp.parameters()) +
+            list(self.model.a2c_network.mu.parameters()),
+            float(self.last_lr),
+            eps=1e-08,
+            weight_decay=self.weight_decay
+        )
+        self.critic_optimizer = optim.Adam(
+            list(self.model.a2c_network.critic_mlp.parameters()) +
+            list(self.model.a2c_network.value.parameters()),
+            float(self.last_lr),
+            eps=1e-08,
+            weight_decay=self.weight_decay
+        )
 
         if self.has_central_value:
             cv_config = {
@@ -403,6 +625,45 @@ class CommonAgent(a2c_continuous.A2CAgent):
 
         return
 
+    def get_full_state_weights(self):
+        state = self.get_weights()
+        state['epoch'] = self.epoch_num
+        state['frame'] = self.frame
+        state['actor_optimizer'] = self.actor_optimizer.state_dict()
+        state['critic_optimizer'] = self.critic_optimizer.state_dict()
+
+        if self.has_central_value:
+            state['assymetric_vf_nets'] = self.central_value_net.state_dict()
+
+        # This is actually the best reward ever achieved. last_mean_rewards is perhaps not the best variable name
+        # We save it to the checkpoint to prevent overriding the "best ever" checkpoint upon experiment restart
+        state['last_mean_rewards'] = self.last_mean_rewards
+
+        if self.vec_env is not None:
+            env_state = self.vec_env.get_env_state()
+            state['env_state'] = env_state
+
+        return state
+
+    def set_full_state_weights(self, weights, set_epoch=True):
+
+        self.set_weights(weights)
+        if set_epoch:
+            self.epoch_num = weights['epoch']
+            self.frame = weights['frame']
+
+        if self.has_central_value:
+            self.central_value_net.load_state_dict(weights['assymetric_vf_nets'])
+
+        self.actor_optimizer.load_state_dict(weights['actor_optimizer'])
+        self.critic_optimizer.load_state_dict(weights['critic_optimizer'])
+
+        self.last_mean_rewards = weights.get('last_mean_rewards', -1000000000)
+
+        if self.vec_env is not None:
+            env_state = weights.get('env_state', None)
+            self.vec_env.set_env_state(env_state)
+
     def discount_values(self, mb_fdones, mb_values, mb_rewards, mb_next_values):
         lastgaelam = 0
         mb_advs = torch.zeros_like(mb_rewards)
@@ -507,6 +768,24 @@ class CommonAgent(a2c_continuous.A2CAgent):
             'critic_loss': c_loss
         }
         return info
+
+    def update_actor_lr(self, lr):
+        if self.multi_gpu:
+            lr_tensor = torch.tensor([lr], device=self.device)
+            dist.broadcast(lr_tensor, 0)
+            lr = lr_tensor.item()
+
+        for param_group in self.actor_optimizer.param_groups:
+            param_group['lr'] = lr
+
+    def update_critic_lr(self, lr):
+        if self.multi_gpu:
+            lr_tensor = torch.tensor([lr], device=self.device)
+            dist.broadcast(lr_tensor, 0)
+            lr = lr_tensor.item()
+
+        for param_group in self.critic_optimizer.param_groups:
+            param_group['lr'] = lr
     
     def _record_train_batch_info(self, batch_dict, train_info):
         return
