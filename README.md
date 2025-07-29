@@ -155,13 +155,13 @@ python train.py task=HumanoidMonkeyBarsPMP4SetsIP headless=True test=True num_en
 To train:
 
 ```bash
-python train.py task=HumanoidBoulderingWallHARLPMP4SetsIP headless=True
+python train.py task=HumanoidRockBoulderingHARLPMP4SetsIP headless=True
 ```
 
 To see the results of a pre-trained model:
 
 ```bash
-python train.py task=HumanoidBoulderingWallHARLPMP4SetsIP headless=True test=True num_envs=4 checkpoint=./pretrained_models/bouldering_wall_pha_with_policy_prior.pth
+python train.py task=HumanoidRockBoulderingHARLPMP4SetsIP headless=True test=True num_envs=4 checkpoint=./pretrained_models/bouldering_wall_pha_with_policy_prior.pth
 ```
 
 #### PHA without Reusable Policy Priors
@@ -169,13 +169,13 @@ python train.py task=HumanoidBoulderingWallHARLPMP4SetsIP headless=True test=Tru
 To train:
 
 ```bash
-python train.py task=HumanoidBoulderingWallHARLPMP4SetsIP headless=True
+python train.py task=HumanoidRockBoulderingHARLPMP4SetsIP headless=True
 ```
 
 To see the results of a pre-trained model:
 
 ```bash
-python train.py task=HumanoidBoulderingWallHARLPMP4SetsIP headless=True test=True num_envs=4 checkpoint=./pretrained_models/bouldering_wall_pha.pth
+python train.py task=HumanoidRockBoulderingHARLPMP4SetsIP headless=True test=True num_envs=4 checkpoint=./pretrained_models/bouldering_wall_pha.pth
 ```
 
 #### Part-wise Motion Priors (PMP) [[Bae et al., 2023]](https://dl.acm.org/doi/10.1145/3588432.3591487)
@@ -183,7 +183,7 @@ python train.py task=HumanoidBoulderingWallHARLPMP4SetsIP headless=True test=Tru
 To train:
 
 ```bash
-python train.py task=HumanoidBoulderingWallHARLPMP4SetsIP headless=True
+python train.py task=HumanoidRockBoulderingHARLPMP4SetsIP headless=True
 ```
 
 To see the results of a pre-trained model:
