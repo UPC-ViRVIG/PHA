@@ -262,6 +262,8 @@ class RLGPUEnv(vecenv.IVecEnv):
 
         if hasattr(self.env, "amp_observation_space"):
             info['amp_observation_space'] = self.env.amp_observation_space
+        if hasattr(self.env, "pmp3setsip_observation_space"):
+            info['pmp3setsip_observation_space'] = self.env.pmp3setsip_observation_space
         if hasattr(self.env, "pmp4setsip_observation_space"):
             info['pmp4setsip_observation_space'] = self.env.pmp4setsip_observation_space
 

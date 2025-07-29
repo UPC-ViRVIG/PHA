@@ -28,6 +28,7 @@
 
 from .humanoid_right_hand_grab_bar import HumanoidRightHandGrabBar
 from .humanoid_right_hand_grab import HumanoidRightHandGrab
+from .humanoid_rope_climbing_pmp3setsip import HumanoidRopeClimbingPMP3SetsIP
 from .humanoid_monkey_bars_pmp4setsip import HumanoidMonkeyBarsPMP4SetsIP
 from .humanoid_rock_bouldering_pmp4setsip import HumanoidRockBoulderingPMP4SetsIP
 
@@ -36,6 +37,7 @@ from .humanoid_rock_bouldering_pmp4setsip import HumanoidRockBoulderingPMP4SetsI
 isaacgym_task_map = {
     "HumanoidRightHandGrabBar": HumanoidRightHandGrabBar,
     "HumanoidRightHandGrab": HumanoidRightHandGrab,
+    "HumanoidRopeClimbingPMP3SetsIP": HumanoidRopeClimbingPMP3SetsIP,
     "HumanoidMonkeyBarsPMP4SetsIP": HumanoidMonkeyBarsPMP4SetsIP,
     "HumanoidRockBoulderingPMP4SetsIP": HumanoidRockBoulderingPMP4SetsIP,
 }

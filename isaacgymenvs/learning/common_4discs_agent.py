@@ -26,20 +26,14 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import copy
 from datetime import datetime
-from gym import spaces
-import numpy as np
 import os
 import time
-import yaml
 
 from rl_games.algos_torch import a2c_continuous
 from rl_games.algos_torch import torch_ext
 from rl_games.algos_torch import central_value
-from rl_games.algos_torch.running_mean_std import RunningMeanStd
 from rl_games.common import a2c_common, common_losses
-from rl_games.common import datasets
 from rl_games.common import schedulers
 from rl_games.common import vecenv
 
@@ -54,7 +48,7 @@ import gym
 from tensorboardX import SummaryWriter
 
 
-class CommonDiscsAgent(a2c_continuous.A2CAgent):
+class Common4DiscsAgent(a2c_continuous.A2CAgent):
     def __init__(self, base_name, params):
         self.config = config = params['config']
         pbt_str = ''
@@ -378,9 +372,7 @@ class CommonDiscsAgent(a2c_continuous.A2CAgent):
     def train(self):
         self.init_tensors()
         self.last_mean_rewards = -100500
-        start_time = time.time()
         total_time = 0
-        rep_count = 0
         self.frame = 0
         self.obs = self.env_reset()
         self.curr_frames = self.batch_size_envs
