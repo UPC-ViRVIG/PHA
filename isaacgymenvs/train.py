@@ -101,6 +101,11 @@ def launch_rlg_hydra(cfg: DictConfig):
     from isaacgymenvs.learning import hand_players
     from isaacgymenvs.learning import hand_models
     from isaacgymenvs.learning import hand_network_builder
+    # Stage 2: Task training imports
+    from isaacgymenvs.learning import pmp4setsip_continuous
+    from isaacgymenvs.learning import pmp4setsip_players
+    from isaacgymenvs.learning import pmp4setsip_models
+    from isaacgymenvs.learning import pmp4setsip_network_builder
     import isaacgymenvs
 
 
@@ -207,6 +212,15 @@ def launch_rlg_hydra(cfg: DictConfig):
         )
         # Network
         model_builder.register_network("hand", lambda **kwargs: hand_network_builder.HandBuilder())
+
+        # Stage 2: Task training
+        runner.algo_factory.register_builder('pmp4setsip_continuous',
+                                             lambda **kwargs: pmp4setsip_continuous.PMP4SetsIPAgent(**kwargs))
+        runner.player_factory.register_builder('pmp4setsip_continuous',
+                                               lambda **kwargs: pmp4setsip_players.PMP4SetsIPPlayerContinuous(**kwargs))
+        model_builder.register_model('continuous_pmp4setsip',
+                                     lambda network, **kwargs: pmp4setsip_models.ModelPMP4SetsIPContinuous(network))
+        model_builder.register_network('pmp4setsip', lambda **kwargs: pmp4setsip_network_builder.PMP4SetsIPBuilder())
 
         return runner
 

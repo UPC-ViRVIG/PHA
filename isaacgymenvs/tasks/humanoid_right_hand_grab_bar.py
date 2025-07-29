@@ -1149,7 +1149,6 @@ def compute_hand_reward(
     ###############################################################
 
     ##################################################################
-    # TODO: Compute correct wrist reward
     # # (D) wrist reward
     wrist_pos_error_square = torch.mean((wrist_pos_goal - wrist_pos) ** 2, dim=-1)
     wrist_speed_square = torch.mean(wrist_vel ** 2, dim=-1)

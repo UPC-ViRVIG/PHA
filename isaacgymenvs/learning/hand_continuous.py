@@ -31,6 +31,7 @@ from rl_games.common import a2c_common
 
 import time
 import torch
+import torch.nn as nn
 
 import isaacgymenvs.learning.common_agent as common_agent
 

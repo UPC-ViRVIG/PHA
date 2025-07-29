@@ -29,7 +29,6 @@
 import copy
 from datetime import datetime
 from gym import spaces
-import gym
 import numpy as np
 import os
 import time
@@ -45,17 +44,18 @@ from rl_games.common import schedulers
 from rl_games.common import vecenv
 
 import torch
-from rl_games.common.diagnostics import DefaultDiagnostics
 from torch import optim
+import torch.nn as nn
 
 from . import amp_datasets as amp_datasets
+from rl_games.common.diagnostics import DefaultDiagnostics
+import gym
 
 from tensorboardX import SummaryWriter
 
 
-class CommonAgent(a2c_continuous.A2CAgent):
+class CommonDiscsAgent(a2c_continuous.A2CAgent):
     def __init__(self, base_name, params):
-
         self.config = config = params['config']
         pbt_str = ''
         self.population_based_training = config.get('population_based_training', False)
@@ -111,7 +111,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
         else:
             self.vec_env = config.get('vec_env', None)
         self.ppo_device = config.get('device', 'cuda:0')
-        self.value_size = self.env_info.get('value_size', 1)
+        self.value_size = self.env_info.get('value_size',1)
         self.observation_space = self.env_info['observation_space']
         self.weight_decay = config.get('weight_decay', 0.0)
         self.use_action_masks = config.get('use_action_masks', False)
@@ -121,9 +121,9 @@ class CommonAgent(a2c_continuous.A2CAgent):
         self.truncate_grads = self.config.get('truncate_grads', False)
         if self.has_central_value:
             self.state_space = self.env_info.get('state_space', None)
-            if isinstance(self.state_space, gym.spaces.Dict):
+            if isinstance(self.state_space,gym.spaces.Dict):
                 self.state_shape = {}
-                for k, v in self.state_space.spaces.items():
+                for k,v in self.state_space.spaces.items():
                     self.state_shape[k] = v.shape
             else:
                 self.state_shape = self.state_space.shape
@@ -146,10 +146,9 @@ class CommonAgent(a2c_continuous.A2CAgent):
             self.kl_threshold = config['kl_threshold']
             self.scheduler = schedulers.AdaptiveScheduler(self.kl_threshold)
         elif self.linear_lr:
-
+            
             if self.max_epochs == -1 and self.max_frames == -1:
-                print(
-                    "Max epochs and max frames are not set. Linear learning rate schedule can't be used, switching to the contstant (identity) one.")
+                print("Max epochs and max frames are not set. Linear learning rate schedule can't be used, switching to the contstant (identity) one.")
                 self.scheduler = schedulers.IdentityScheduler()
             else:
                 use_epochs = True
@@ -158,10 +157,10 @@ class CommonAgent(a2c_continuous.A2CAgent):
                     use_epochs = False
                     max_steps = self.max_frames
                 self.scheduler = schedulers.LinearScheduler(float(config['learning_rate']),
-                                                            max_steps=max_steps,
-                                                            use_epochs=use_epochs,
-                                                            apply_to_entropy=config.get('schedule_entropy', False),
-                                                            start_entropy_coef=config.get('entropy_coef'))
+                    max_steps = max_steps,
+                    use_epochs = use_epochs,
+                    apply_to_entropy = config.get('schedule_entropy', False),
+                    start_entropy_coef = config.get('entropy_coef'))
         else:
             self.scheduler = schedulers.IdentityScheduler()
         self.e_clip = config['e_clip']
@@ -174,9 +173,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
         if 'seq_len' in config:
             print('WARNING: seq_len is deprecated, use seq_length instead')
         self.seq_length = self.config.get('seq_length', 4)
-        print('seq_length:', self.seq_length)
-        self.bptt_len = self.config.get('bptt_length',
-                                        self.seq_length)  # not used right now. Didn't show that it is usefull
+        self.bptt_len = self.config.get('bptt_length', self.seq_length) # not used right now. Didn't show that it is useful
         self.zero_rnn_on_done = self.config.get('zero_rnn_on_done', True)
         self.normalize_advantage = config['normalize_advantage']
         self.normalize_rms_advantage = config.get('normalize_rms_advantage', False)
@@ -185,33 +182,36 @@ class CommonAgent(a2c_continuous.A2CAgent):
         self.truncate_grads = self.config.get('truncate_grads', False)
         if isinstance(self.observation_space, gym.spaces.Dict):
             self.obs_shape = {}
-            for k, v in self.observation_space.spaces.items():
+            for k,v in self.observation_space.spaces.items():
                 self.obs_shape[k] = v.shape
         else:
             self.obs_shape = self.observation_space.shape
-
+ 
         self.critic_coef = config['critic_coef']
         self.grad_norm = config['grad_norm']
         self.gamma = self.config['gamma']
         self.tau = self.config['tau']
         self.games_to_track = self.config.get('games_to_track', 100)
-        print('current training device:', self.ppo_device)
         self.game_rewards = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
         self.game_shaped_rewards = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
         self.game_lengths = torch_ext.AverageMeter(1, self.games_to_track).to(self.ppo_device)
         self.obs = None
-        self.games_num = self.config[
-                             'minibatch_size'] // self.seq_length  # it is used only for current rnn implementation
+        self.games_num = self.config['minibatch_size'] // self.seq_length # it is used only for current rnn implementation
         self.batch_size = self.horizon_length * self.num_actors
         self.batch_size_envs = self.horizon_length * self.num_actors
-        assert (('minibatch_size_per_env' in self.config) or ('minibatch_size' in self.config))
+        assert(('minibatch_size_per_env' in self.config) or ('minibatch_size' in self.config))
         self.minibatch_size_per_env = self.config.get('minibatch_size_per_env', 0)
         self.minibatch_size = self.config.get('minibatch_size', self.num_actors * self.minibatch_size_per_env)
         self.num_minibatches = self.batch_size // self.minibatch_size
-        assert (self.batch_size % self.minibatch_size == 0)
+        assert(self.batch_size % self.minibatch_size == 0)
         self.mini_epochs_num = self.config['mini_epochs']
         self.mixed_precision = self.config.get('mixed_precision', False)
-        self.discs_scaler = torch.cuda.amp.GradScaler(enabled=self.mixed_precision)
+        self.disc_0_scaler = torch.cuda.amp.GradScaler(enabled=self.mixed_precision)
+        self.disc_1_scaler = torch.cuda.amp.GradScaler(enabled=self.mixed_precision)
+        self.disc_2_scaler = torch.cuda.amp.GradScaler(enabled=self.mixed_precision)
+        self.disc_3_scaler = torch.cuda.amp.GradScaler(enabled=self.mixed_precision)
+        self.disc_4_scaler = torch.cuda.amp.GradScaler(enabled=self.mixed_precision)
+        self.disc_5_scaler = torch.cuda.amp.GradScaler(enabled=self.mixed_precision)
         self.actor_scaler = torch.cuda.amp.GradScaler(enabled=self.mixed_precision)
         self.critic_scaler = torch.cuda.amp.GradScaler(enabled=self.mixed_precision)
         self.last_lr = self.config['learning_rate']
@@ -253,7 +253,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
         self.is_tensor_obses = False
         self.last_rnn_indices = None
         self.last_state_indices = None
-        # self_play
+        #self_play
         if self.has_self_play_config:
             print('Initializing SelfPlay Manager')
             self.self_play_manager = SelfPlayManager(self.self_play_config, self.writer)
@@ -283,6 +283,48 @@ class CommonAgent(a2c_continuous.A2CAgent):
         self.last_lr = float(self.last_lr)
         self.seq_len = config['seq_len']
 
+        self.disc_0_optimizer = optim.Adam(
+            list(self.model.a2c_network._disc_mlp_upper.parameters()) +
+            list(self.model.a2c_network._disc_logits_upper.parameters()),
+            float(self.last_lr),
+            eps=1e-08,
+            weight_decay=self.weight_decay
+        )
+        self.disc_1_optimizer = optim.Adam(
+            list(self.model.a2c_network._disc_mlp_lower.parameters()) +
+            list(self.model.a2c_network._disc_logits_lower.parameters()),
+            float(self.last_lr),
+            eps=1e-08,
+            weight_decay=self.weight_decay
+        )
+        self.disc_2_optimizer = optim.Adam(
+            list(self.model.a2c_network._disc_mlp_right_hand.parameters()) +
+            list(self.model.a2c_network._disc_logits_right_hand.parameters()),
+            float(self.last_lr),
+            eps=1e-08,
+            weight_decay=self.weight_decay
+        )
+        self.disc_3_optimizer = optim.Adam(
+            list(self.model.a2c_network._disc_mlp_left_hand.parameters()) +
+            list(self.model.a2c_network._disc_logits_left_hand.parameters()),
+            float(self.last_lr),
+            eps=1e-08,
+            weight_decay=self.weight_decay
+        )
+        self.disc_4_optimizer = optim.Adam(
+            list(self.model.a2c_network._disc_mlp_ip_right_hand.parameters()) +
+            list(self.model.a2c_network._disc_logits_ip_right_hand.parameters()),
+            float(self.last_lr),
+            eps=1e-08,
+            weight_decay=self.weight_decay
+        )
+        self.disc_5_optimizer = optim.Adam(
+            list(self.model.a2c_network._disc_mlp_ip_left_hand.parameters()) +
+            list(self.model.a2c_network._disc_logits_ip_left_hand.parameters()),
+            float(self.last_lr),
+            eps=1e-08,
+            weight_decay=self.weight_decay
+        )
         self.actor_optimizer = optim.Adam(
             list(self.model.a2c_network.actor_mlp.parameters()) +
             list(self.model.a2c_network.mu.parameters()),
@@ -329,6 +371,10 @@ class CommonAgent(a2c_continuous.A2CAgent):
         self.tensor_list += ['next_obses']
         return
 
+    def schedule_env(self):
+        self.vec_env.env.update_epoch(self.epoch_num)
+        return
+    
     def train(self):
         self.init_tensors()
         self.last_mean_rewards = -100500
@@ -341,7 +387,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
 
 
         self.model_output_file = os.path.join(self.network_path, 
-            self.config['name'] + '_{date:%d-%H-%M-%S}'.format(date=datetime.now()))
+            self.config['name'] + '_{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now()))
 
         self._init_train()
 
@@ -351,6 +397,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
 
         while True:
             epoch_num = self.update_epoch()
+            self.schedule_env()
             train_info = self.train_epoch()
 
             sum_time = train_info['total_time']
@@ -429,7 +476,6 @@ class CommonAgent(a2c_continuous.A2CAgent):
             print(frames_mask_ratio)
 
         for _ in range(0, self.mini_epochs_num):
-            ep_kls = []
             for i in range(len(self.dataset)):
                 curr_train_info = self.train_actor_critic(self.dataset[i])
                 print(type(curr_train_info))
@@ -470,11 +516,11 @@ class CommonAgent(a2c_continuous.A2CAgent):
 
     def play_steps(self):
         self.set_eval()
-        
-        epinfos = []
+
         update_list = self.update_list
 
         for n in range(self.horizon_length):
+            print(f'play_steps')
             self.obs, done_env_ids = self._env_reset_done()
             self.experience_buffer.update_data('obses', n, self.obs['obs'])
 
@@ -543,8 +589,6 @@ class CommonAgent(a2c_continuous.A2CAgent):
         obs_batch = input_dict['obs']
         obs_batch = self._preproc_obs(obs_batch)
 
-        lr = self.last_lr
-        kl = 1.0
         lr_mul = 1.0
         curr_e_clip = lr_mul * self.e_clip
 
@@ -623,11 +667,17 @@ class CommonAgent(a2c_continuous.A2CAgent):
         self.train_result.update(c_info)
 
         return
-
+    
     def get_full_state_weights(self):
         state = self.get_weights()
         state['epoch'] = self.epoch_num
         state['frame'] = self.frame
+        state['disc_0_optimizer'] = self.disc_0_optimizer.state_dict()
+        state['disc_1_optimizer'] = self.disc_1_optimizer.state_dict()
+        state['disc_2_optimizer'] = self.disc_2_optimizer.state_dict()
+        state['disc_3_optimizer'] = self.disc_3_optimizer.state_dict()
+        state['disc_4_optimizer'] = self.disc_4_optimizer.state_dict()
+        state['disc_5_optimizer'] = self.disc_5_optimizer.state_dict()
         state['actor_optimizer'] = self.actor_optimizer.state_dict()
         state['critic_optimizer'] = self.critic_optimizer.state_dict()
 
@@ -643,7 +693,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
             state['env_state'] = env_state
 
         return state
-
+    
     def set_full_state_weights(self, weights, set_epoch=True):
 
         self.set_weights(weights)
@@ -654,6 +704,12 @@ class CommonAgent(a2c_continuous.A2CAgent):
         if self.has_central_value:
             self.central_value_net.load_state_dict(weights['assymetric_vf_nets'])
 
+        self.disc_0_optimizer.load_state_dict(weights['disc_0_optimizer'])
+        self.disc_1_optimizer.load_state_dict(weights['disc_1_optimizer'])
+        self.disc_2_optimizer.load_state_dict(weights['disc_2_optimizer'])
+        self.disc_3_optimizer.load_state_dict(weights['disc_3_optimizer'])
+        self.disc_4_optimizer.load_state_dict(weights['disc_4_optimizer'])
+        self.disc_5_optimizer.load_state_dict(weights['disc_5_optimizer'])
         self.actor_optimizer.load_state_dict(weights['actor_optimizer'])
         self.critic_optimizer.load_state_dict(weights['critic_optimizer'])
 
@@ -767,6 +823,25 @@ class CommonAgent(a2c_continuous.A2CAgent):
             'critic_loss': c_loss
         }
         return info
+    
+    def update_discs_lr(self, lr):
+        if self.multi_gpu:
+            lr_tensor = torch.tensor([lr], device=self.device)
+            dist.broadcast(lr_tensor, 0)
+            lr = lr_tensor.item()
+
+        for param_group in self.disc_0_optimizer.param_groups:
+            param_group['lr'] = lr
+        for param_group in self.disc_1_optimizer.param_groups:
+            param_group['lr'] = lr
+        for param_group in self.disc_2_optimizer.param_groups:
+            param_group['lr'] = lr
+        for param_group in self.disc_3_optimizer.param_groups:
+            param_group['lr'] = lr
+        for param_group in self.disc_4_optimizer.param_groups:
+            param_group['lr'] = lr
+        for param_group in self.disc_5_optimizer.param_groups:
+            param_group['lr'] = lr
 
     def update_actor_lr(self, lr):
         if self.multi_gpu:
@@ -776,7 +851,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
 
         for param_group in self.actor_optimizer.param_groups:
             param_group['lr'] = lr
-
+    
     def update_critic_lr(self, lr):
         if self.multi_gpu:
             lr_tensor = torch.tensor([lr], device=self.device)

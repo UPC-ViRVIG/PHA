@@ -1,0 +1,7 @@
+motions:
+  - file: "Hanging_Idle_AMP_MPL.npy"
+    weight: 0.33333
+  - file: "Swinging_Left_AMP_MPL.npy"
+    weight: 0.33333
+  - file: "Swinging_Right_AMP_MPL.npy"
+    weight: 0.33333
