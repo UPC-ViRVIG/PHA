@@ -102,16 +102,23 @@ def launch_rlg_hydra(cfg: DictConfig):
     from isaacgymenvs.learning import hand_models
     from isaacgymenvs.learning import hand_network_builder
     # Stage 2: Task training imports
-    # 3 sets IP imports
+    ## PMP
+    ### 3 sets IP imports
     from isaacgymenvs.learning import pmp3setsip_continuous
     from isaacgymenvs.learning import pmp3setsip_players
     from isaacgymenvs.learning import pmp3setsip_models
     from isaacgymenvs.learning import pmp3setsip_network_builder
-    # 4 sets IP imports
+    ### 4 sets IP imports
     from isaacgymenvs.learning import pmp4setsip_continuous
     from isaacgymenvs.learning import pmp4setsip_players
     from isaacgymenvs.learning import pmp4setsip_models
     from isaacgymenvs.learning import pmp4setsip_network_builder
+    ## PHA
+    ### 4 sets IP imports
+    from isaacgymenvs.learning import pha4setsip_continuous
+    from isaacgymenvs.learning import pha4setsip_players
+    from isaacgymenvs.learning import pha4setsip_models
+    from isaacgymenvs.learning import pha4setsip_network_builder
     import isaacgymenvs
 
 
@@ -220,7 +227,8 @@ def launch_rlg_hydra(cfg: DictConfig):
         model_builder.register_network("hand", lambda **kwargs: hand_network_builder.HandBuilder())
 
         # Stage 2: Task training
-        # 3 sets IP Agent
+        ## PMP
+        ### 3 sets IP Agent
         runner.algo_factory.register_builder('pmp3setsip_continuous',
                                              lambda **kwargs: pmp3setsip_continuous.PMP3SetsIPAgent(**kwargs))
         runner.player_factory.register_builder('pmp3setsip_continuous',
@@ -228,7 +236,7 @@ def launch_rlg_hydra(cfg: DictConfig):
         model_builder.register_model('continuous_pmp3setsip',
                                      lambda network, **kwargs: pmp3setsip_models.ModelPMP3SetsIPContinuous(network))
         model_builder.register_network('pmp3setsip', lambda **kwargs: pmp3setsip_network_builder.PMP3SetsIPBuilder())
-        # 4 sets IP Agent
+        ### 4 sets IP Agent
         runner.algo_factory.register_builder('pmp4setsip_continuous',
                                              lambda **kwargs: pmp4setsip_continuous.PMP4SetsIPAgent(**kwargs))
         runner.player_factory.register_builder('pmp4setsip_continuous',
@@ -236,6 +244,18 @@ def launch_rlg_hydra(cfg: DictConfig):
         model_builder.register_model('continuous_pmp4setsip',
                                      lambda network, **kwargs: pmp4setsip_models.ModelPMP4SetsIPContinuous(network))
         model_builder.register_network('pmp4setsip', lambda **kwargs: pmp4setsip_network_builder.PMP4SetsIPBuilder())
+        ## PHA
+        ### 4 sets IP Agent
+        runner.algo_factory.register_builder('pha4setsip_continuous',
+                                             lambda **kwargs: pha4setsip_continuous.PHA4SetsIPAgent(**kwargs))
+        runner.player_factory.register_builder('pha4setsip_continuous',
+                                               lambda **kwargs: pha4setsip_players.PHA4SetsIPPlayerContinuous(
+                                                   **kwargs))
+        model_builder.register_model('continuous_pha4setsip',
+                                     lambda network, **kwargs: pha4setsip_models.ModelPHA4SetsIPContinuous(
+                                         network))
+        model_builder.register_network('pha4setsip',
+                                       lambda **kwargs: pha4setsip_network_builder.PHA4SetsIPBuilder())
 
         return runner
 

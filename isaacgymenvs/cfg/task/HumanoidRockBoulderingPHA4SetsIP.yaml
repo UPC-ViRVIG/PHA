@@ -1,0 +1,161 @@
+# used to create the object
+name: HumanoidRockBoulderingPHA4SetsIP
+
+physics_engine: ${..physics_engine}
+
+# if given, will override the device setting in gym.
+env:
+  testMode: ${resolve_default:False,${...test}}
+  kinematicsMode: False
+  numEnvs: ${resolve_default:4096,${...num_envs}}
+  numActions: 48 # MCP simplified
+  numAgents: 4
+  envSpacing: 5
+  episodeLength: 150
+  cameraFollow: True # if the camera follows humanoid or not
+  enableDebugVis: True
+  
+  pdControl: True
+  powerScale: 1.0
+  controlFrequencyInv: 2 # 30 Hz
+  stateInit: "Random"
+  hybridInitProb: 0.5
+  numAMPObsSteps: 2
+
+  localRootObs: False
+  contactBodies: [
+    "right_upper_arm",
+    "right_lower_arm",
+    "left_upper_arm",
+    "left_lower_arm",
+    "right_thigh",
+    "right_shin",
+    "left_thigh",
+    "left_shin",
+    "right_palm",
+    "right_thumb0",
+    "right_thumb1",
+    "right_thumb2",
+    "right_thumb3",
+    "right_index0",
+    "right_index1",
+    "right_index2",
+    "right_index3",
+    "right_middle0",
+    "right_middle1",
+    "right_middle2",
+    "right_middle3",
+    "right_ring0",
+    "right_ring1",
+    "right_ring2",
+    "right_ring3",
+    "right_pinky0",
+    "right_pinky1",
+    "right_pinky2",
+    "right_pinky3",
+    "left_palm",
+    "left_thumb0",
+    "left_thumb1",
+    "left_thumb2",
+    "left_thumb3",
+    "left_index0",
+    "left_index1",
+    "left_index2",
+    "left_index3",
+    "left_middle0",
+    "left_middle1",
+    "left_middle2",
+    "left_middle3",
+    "left_ring0",
+    "left_ring1",
+    "left_ring2",
+    "left_ring3",
+    "left_pinky0",
+    "left_pinky1",
+    "left_pinky2",
+    "left_pinky3",
+    "right_foot",
+    "left_foot"]
+  terminationHeight: 0.55
+  enableEarlyTermination: True
+
+  # animation files to learn from
+  motion_file: "Climbing_Up_Wall_AMP_MPL.npy"
+  right_hand_ip: "right_hand_ip_v2.npy"
+  left_hand_ip: "left_hand_ip_v2.npy"
+  hands_ip: "hand_grasping_demonstrations.npy"
+
+  asset:
+    assetFileName: "mjcf/amp_humanoid_mpl.xml"
+
+  plane:
+    staticFriction: 1.0
+    dynamicFriction: 1.0
+    restitution: 0.0
+misc:
+  init_rfingers_rot: [
+    [ 7.2938e-01,  7.8186e-02, -1.0777e-01,  6.7103e-01 ],
+    [ 7.2938e-01,  7.8186e-02, -1.0777e-01,  6.7103e-01 ],
+    [ 7.2938e-01,  7.8186e-02, -1.0777e-01,  6.7103e-01 ],
+    [ 7.2938e-01,  7.8186e-02, -1.0777e-01,  6.7103e-01 ],
+    [ 7.0442e-01,  6.1628e-02,  6.1628e-02,  7.0442e-01 ],
+    [ 7.0442e-01,  6.1628e-02,  6.1628e-02,  7.0442e-01 ],
+    [ 7.0442e-01,  6.1628e-02,  6.1628e-02,  7.0442e-01 ],
+    [ 7.0442e-01,  6.1628e-02,  6.1628e-02,  7.0442e-01 ],
+    [ -6.9722e-01, -1.0070e-16,  8.9982e-17, -7.1686e-01 ],
+    [ -6.9722e-01, -1.0070e-16,  8.9982e-17, -7.1686e-01 ],
+    [ -6.9722e-01, -1.0070e-16,  8.9982e-17, -7.1686e-01 ],
+    [ -6.9722e-01, -1.0070e-16,  8.9982e-17, -7.1686e-01 ],
+    [ 7.0442e-01, -6.1628e-02, -6.1628e-02,  7.0442e-01 ],
+    [ 7.0442e-01, -6.1628e-02, -6.1628e-02,  7.0442e-01 ],
+    [ 7.0442e-01, -6.1628e-02, -6.1628e-02,  7.0442e-01 ],
+    [ 7.0442e-01, -6.1628e-02, -6.1628e-02,  7.0442e-01 ],
+    [ 7.0442e-01, -6.1628e-02, -6.1628e-02,  7.0442e-01 ],
+    [ 7.0442e-01, -6.1628e-02, -6.1628e-02,  7.0442e-01 ],
+    [ 7.0442e-01, -6.1628e-02, -6.1628e-02,  7.0442e-01 ],
+    [ 7.0442e-01, -6.1628e-02, -6.1628e-02,  7.0442e-01 ]
+  ]
+
+  init_lfingers_rot: [
+    [ 7.8186e-02,  6.7103e-01,  7.2938e-01, -1.0777e-01 ],
+    [ 7.8186e-02,  6.7103e-01,  7.2938e-01, -1.0777e-01 ],
+    [ 7.8186e-02,  6.7103e-01,  7.2938e-01, -1.0777e-01 ],
+    [ 7.8186e-02,  6.7103e-01,  7.2938e-01, -1.0777e-01 ],
+    [ 6.1628e-02,  7.0442e-01,  7.0442e-01,  6.1628e-02 ],
+    [ 6.1628e-02,  7.0442e-01,  7.0442e-01,  6.1628e-02 ],
+    [ 6.1628e-02,  7.0442e-01,  7.0442e-01,  6.1628e-02 ],
+    [ 6.1628e-02,  7.0442e-01,  7.0442e-01,  6.1628e-02 ],
+    [ -8.3115e-08,  6.9722e-01,  7.1686e-01, -8.5456e-08 ],
+    [ -8.3115e-08,  6.9722e-01,  7.1686e-01, -8.5456e-08 ],
+    [ -8.3115e-08,  6.9722e-01,  7.1686e-01, -8.5456e-08 ],
+    [ -8.3115e-08,  6.9722e-01,  7.1686e-01, -8.5456e-08 ],
+    [ -6.1628e-02,  7.0442e-01,  7.0442e-01, -6.1628e-02 ],
+    [ -6.1628e-02,  7.0442e-01,  7.0442e-01, -6.1628e-02 ],
+    [ -6.1628e-02,  7.0442e-01,  7.0442e-01, -6.1628e-02 ],
+    [ -6.1628e-02,  7.0442e-01,  7.0442e-01, -6.1628e-02 ],
+    [ -6.1628e-02,  7.0442e-01,  7.0442e-01, -6.1628e-02 ],
+    [ -6.1628e-02,  7.0442e-01,  7.0442e-01, -6.1628e-02 ],
+    [ -6.1628e-02,  7.0442e-01,  7.0442e-01, -6.1628e-02 ],
+    [ -6.1628e-02,  7.0442e-01,  7.0442e-01, -6.1628e-02 ]
+  ]
+
+sim:
+  dt: 0.0166 # 1/60 s
+  substeps: 2
+  up_axis: "z"
+  use_gpu_pipeline: ${eq:${...pipeline},"gpu"}
+  gravity: [0.0, 0.0, -9.81]
+  physx:
+    num_threads: ${....num_threads}
+    solver_type: ${....solver_type}
+    use_gpu: ${contains:"cuda",${....sim_device}} # set to False to run on CPU
+    num_position_iterations: 4
+    num_velocity_iterations: 0
+    contact_offset: 0.002
+    rest_offset: 0.0
+    bounce_threshold_velocity: 0.2
+    max_depenetration_velocity: 100.0
+    default_buffer_size_multiplier: 5.0
+    max_gpu_contact_pairs: 8388608 # 8*1024*1024
+    num_subscenes: ${....num_subscenes}
+    contact_collection: 2 # 0: CC_NEVER (don't collect contact info), 1: CC_LAST_SUBSTEP (collect only contacts on last substep), 2: CC_ALL_SUBSTEPS (broken - do not use!)
