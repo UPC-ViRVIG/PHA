@@ -65,7 +65,7 @@ params:
     score_to_win: 20000
     max_epochs: ${resolve_default:20000,${....max_iterations}}
     save_best_after: 100
-    save_frequency: 1000
+    save_frequency: 200
     print_stats: True
     print_disc_prediction: False
     grad_norm: 1.0
