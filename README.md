@@ -4,6 +4,9 @@
 ![](./images/teaser.png)
 
 Official implementation of the paper: "PHA: Part-wise Heterogeneous Agents with Reusable Policy Priors for Motion Synthesis" for SCA 2025.
+> 🚧 Migrating to IsaacLab 🚧
+> 
+> Since IsaacGym has been deprecated, I'm migrating this method to a [ProtoMotions fork](https://github.com/locoxsoco/ProtoMotions). It is work in progress, but the new structure is cleaner and more modular, making it easier to run experiments and extend the work.
 
 ---
 
