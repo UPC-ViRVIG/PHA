@@ -29,22 +29,16 @@
 from rl_games.algos_torch.running_mean_std import RunningMeanStd
 from rl_games.algos_torch import torch_ext
 from rl_games.common import a2c_common
-from rl_games.common import schedulers
-from rl_games.common import vecenv
 
 from isaacgymenvs.utils.torch_jit_utils import to_torch
 
 import time
-from datetime import datetime
 import numpy as np
-from torch import optim
 import torch
 from torch import nn
 
 import isaacgymenvs.learning.replay_buffer as replay_buffer
 import isaacgymenvs.learning.common_3discs_agent as common_3discs_agent
-
-from tensorboardX import SummaryWriter
 
 
 class PMP3SetsIPAgent(common_3discs_agent.Common3DiscsAgent):
@@ -60,9 +54,6 @@ class PMP3SetsIPAgent(common_3discs_agent.Common3DiscsAgent):
                 else self.model.value_mean_std
             )
         if self._normalize_pmp3setsip_input:
-            print(
-                f"self._pmp3setsip_observation_space.shape: {self._pmp3setsip_observation_space.shape}"
-            )
             self._pmp3setsip_input_mean_std = RunningMeanStd(
                 self._pmp3setsip_observation_space.shape
             ).to(self.ppo_device)
@@ -204,22 +195,18 @@ class PMP3SetsIPAgent(common_3discs_agent.Common3DiscsAgent):
 
         proc_mb_pmp3setsip_obs_ip_right_hand = torch.cat(
             (reshaped_proc_mb_pmp3setsip_obs[..., 105:192],), dim=-1,
-            # (reshaped_proc_mb_pmp3setsip_obs[..., 105:172],), dim=-1,
         )
         proc_mb_pmp3setsip_obs_ip_right_hand = (
             proc_mb_pmp3setsip_obs_ip_right_hand.view(
                 *proc_mb_pmp3setsip_obs.shape[:-1], self._num_pmp3setsip_obs_steps * 87
-                # *proc_mb_pmp3setsip_obs.shape[:-1], self._num_pmp3setsip_obs_steps * 67
             )
         )
 
         proc_mb_pmp3setsip_obs_ip_left_hand = torch.cat(
             (reshaped_proc_mb_pmp3setsip_obs[..., 192:279],), dim=-1,
-            # (reshaped_proc_mb_pmp3setsip_obs[..., 192:259],), dim=-1,
         )
         proc_mb_pmp3setsip_obs_ip_left_hand = proc_mb_pmp3setsip_obs_ip_left_hand.view(
             *proc_mb_pmp3setsip_obs.shape[:-1], self._num_pmp3setsip_obs_steps * 87
-            # *proc_mb_pmp3setsip_obs.shape[:-1], self._num_pmp3setsip_obs_steps * 67
         )
 
         right_hand_goal = (reshaped_mb_pmp3setsip_obs[..., 147:150] + reshaped_mb_pmp3setsip_obs[..., 150:153])/2.0
@@ -302,7 +289,6 @@ class PMP3SetsIPAgent(common_3discs_agent.Common3DiscsAgent):
             print(frames_mask_ratio)
 
         for _ in range(0, self.mini_epochs_num):
-            ep_kls = []
             for i in range(len(self.dataset)):
                 curr_train_info = self.train_actor_critic(self.dataset[i])
 
@@ -409,20 +395,16 @@ class PMP3SetsIPAgent(common_3discs_agent.Common3DiscsAgent):
 
         pmp3setsip_obs_ip_right_hand = torch.cat(
             (reshaped_pmp3setsip_obs[..., 105:192],), dim=-1
-            # (reshaped_pmp3setsip_obs[..., 105:172],), dim=-1
         )
         pmp3setsip_obs_ip_right_hand = pmp3setsip_obs_ip_right_hand.view(
             *pmp3setsip_obs.shape[:-1], self._num_pmp3setsip_obs_steps * 87
-            # *pmp3setsip_obs.shape[:-1], self._num_pmp3setsip_obs_steps * 67
         )
 
         pmp3setsip_obs_ip_left_hand = torch.cat(
             (reshaped_pmp3setsip_obs[..., 192:279],), dim=-1
-            # (reshaped_pmp3setsip_obs[..., 192:259],), dim=-1
         )
         pmp3setsip_obs_ip_left_hand = pmp3setsip_obs_ip_left_hand.view(
             *pmp3setsip_obs.shape[:-1], self._num_pmp3setsip_obs_steps * 87
-            # *pmp3setsip_obs.shape[:-1], self._num_pmp3setsip_obs_steps * 67
         )
 
         pmp3setsip_obs_replay = input_dict["pmp3setsip_obs_replay"][
@@ -469,27 +451,22 @@ class PMP3SetsIPAgent(common_3discs_agent.Common3DiscsAgent):
 
         pmp3setsip_obs_replay_ip_right_hand = torch.cat(
             (reshaped_pmp3setsip_obs_replay[..., 105:192],), dim=-1
-            # (reshaped_pmp3setsip_obs_replay[..., 105:172],), dim=-1
         )
         pmp3setsip_obs_replay_ip_right_hand = pmp3setsip_obs_replay_ip_right_hand.view(
             *pmp3setsip_obs_replay.shape[:-1], self._num_pmp3setsip_obs_steps * 87
-            # *pmp3setsip_obs_replay.shape[:-1], self._num_pmp3setsip_obs_steps * 67
         )
 
         pmp3setsip_obs_replay_ip_left_hand = torch.cat(
             (reshaped_pmp3setsip_obs_replay[..., 192:279],), dim=-1
-            # (reshaped_pmp3setsip_obs_replay[..., 192:259], ), dim=-1
         )
         pmp3setsip_obs_replay_ip_left_hand = pmp3setsip_obs_replay_ip_left_hand.view(
             *pmp3setsip_obs_replay.shape[:-1], self._num_pmp3setsip_obs_steps * 87
-            # *pmp3setsip_obs_replay.shape[:-1], self._num_pmp3setsip_obs_steps * 67
         )
 
         pmp3setsip_obs_demo = input_dict["pmp3setsip_obs_demo"][
             0 : self._pmp3setsip_minibatch_size
         ]
         pmp3setsip_obs_demo = self._preproc_pmp3setsip_obs(pmp3setsip_obs_demo)
-        # pmp3setsip_obs_demo.requires_grad_(True)
 
         # Here we use the additional 29+29 features for the right and left hand motion reference discs
         reshaped_pmp3setsip_obs_demo = pmp3setsip_obs_demo.view(
@@ -534,21 +511,17 @@ class PMP3SetsIPAgent(common_3discs_agent.Common3DiscsAgent):
 
         pmp3setsip_obs_demo_ip_right_hand = torch.cat(
             (reshaped_pmp3setsip_obs_demo[..., 105:192],), dim=-1
-            # (reshaped_pmp3setsip_obs_demo[..., 105:172],), dim=-1
         )
         pmp3setsip_obs_demo_ip_right_hand = pmp3setsip_obs_demo_ip_right_hand.view(
             *pmp3setsip_obs_demo.shape[:-1], self._num_pmp3setsip_obs_steps * 87
-            # *pmp3setsip_obs_demo.shape[:-1], self._num_pmp3setsip_obs_steps * 67
         )
         pmp3setsip_obs_demo_ip_right_hand.requires_grad_(True)
 
         pmp3setsip_obs_demo_ip_left_hand = torch.cat(
             (reshaped_pmp3setsip_obs_demo[..., 192:279],), dim=-1
-            # (reshaped_pmp3setsip_obs_demo[..., 192:259],), dim=-1
         )
         pmp3setsip_obs_demo_ip_left_hand = pmp3setsip_obs_demo_ip_left_hand.view(
             *pmp3setsip_obs_demo.shape[:-1], self._num_pmp3setsip_obs_steps * 87
-            # *pmp3setsip_obs_demo.shape[:-1], self._num_pmp3setsip_obs_steps * 67
         )
         pmp3setsip_obs_demo_ip_left_hand.requires_grad_(True)
 
@@ -657,9 +630,7 @@ class PMP3SetsIPAgent(common_3discs_agent.Common3DiscsAgent):
                 dim=0,
             )
 
-            # TODO: Implement this
             set_id = 0
-            # print(f'pmp3setsip_obs_demo.shape: {pmp3setsip_obs_demo.shape}')
             disc_info_upper = self._disc_loss(
                 disc_agent_cat_logit_upper,
                 disc_demo_logit_upper,
@@ -695,29 +666,11 @@ class PMP3SetsIPAgent(common_3discs_agent.Common3DiscsAgent):
                 set_id,
             )
 
-            # disc_loss = (
-            #     disc_info_upper["disc_loss"]
-            #     + disc_info_right_hand["disc_loss"]
-            #     + disc_info_left_hand["disc_loss"]
-            #     + disc_info_ip_right_hand["disc_loss"]
-            #     + disc_info_ip_left_hand["disc_loss"]
-            # ) / 6.0
-
-            # disc_loss = (
-            #     disc_info_upper["disc_loss"]
-            #     + disc_info_ip_right_hand["disc_loss"]
-            #     + disc_info_ip_left_hand["disc_loss"]
-            # ) / 4.0
-
             disc_0_loss = disc_info_upper["disc_loss_0"]
             disc_1_loss = disc_info_right_hand["disc_loss_1"]
             disc_2_loss = disc_info_left_hand["disc_loss_2"]
             disc_3_loss = disc_info_ip_right_hand["disc_loss_3"]
             disc_4_loss = disc_info_ip_left_hand["disc_loss_4"]
-
-            # print(f'disc_info_upper["disc_loss"]: {disc_info_upper["disc_loss"]}')
-            # print(f'disc_info_ip_right_hand["disc_loss"]: {disc_info_ip_right_hand["disc_loss"]}')
-            # print(f'disc_info_ip_left_hand["disc_loss"]: {disc_info_ip_left_hand["disc_loss"]}')
 
             actor_loss = (
                 a_loss
@@ -725,154 +678,146 @@ class PMP3SetsIPAgent(common_3discs_agent.Common3DiscsAgent):
             )
 
             if self.multi_gpu:
-                self.optimizer.zero_grad()
+                self.disc_0_optimizer.zero_grad()
+                self.disc_1_optimizer.zero_grad()
+                self.disc_2_optimizer.zero_grad()
+                self.disc_3_optimizer.zero_grad()
+                self.disc_4_optimizer.zero_grad()
+                self.actor_optimizer.zero_grad()
+                self.critic_optimizer.zero_grad()
             else:
                 for param in self.model.parameters():
                     param.grad = None
 
         self.disc_0_scaler.scale(disc_0_loss).backward()
         # TODO: Refactor this ugliest code of the year
-        # TODO: Support truncate grads
         if self.truncate_grads:
-            print(f'Truncate grads not supported yet!')
-            # if self.multi_gpu:
-            #     self.optimizer.synchronize()
-            #     self.scaler.unscale_(self.optimizer)
-            #     nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
-            #     with self.optimizer.skip_synchronize():
-            #         self.scaler.step(self.optimizer)
-            #         self.scaler.update()
-            # else:
-            #     self.scaler.unscale_(self.optimizer)
-            #     nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
-            #     self.scaler.step(self.optimizer)
-            #     self.scaler.update()
+            if self.multi_gpu:
+                self.disc_0_optimizer.synchronize()
+                self.disc_0_scaler.unscale_(self.disc_0_optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
+                with self.disc_0_optimizer.skip_synchronize():
+                    self.scaler.step(self.disc_0_optimizer)
+                    self.disc_0_scaler.update()
+            else:
+                self.disc_0_scaler.unscale_(self.disc_0_optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
+                self.disc_0_scaler.step(self.disc_0_optimizer)
+                self.disc_0_scaler.update()
         else:
             self.disc_0_scaler.step(self.disc_0_optimizer)
             self.disc_0_scaler.update()
 
         self.disc_1_scaler.scale(disc_1_loss).backward()
         # TODO: Refactor this ugliest code of the year
-        # TODO: Support truncate grads
         if self.truncate_grads:
-            print(f'Truncate grads not supported yet!')
-            # if self.multi_gpu:
-            #     self.optimizer.synchronize()
-            #     self.scaler.unscale_(self.optimizer)
-            #     nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
-            #     with self.optimizer.skip_synchronize():
-            #         self.scaler.step(self.optimizer)
-            #         self.scaler.update()
-            # else:
-            #     self.scaler.unscale_(self.optimizer)
-            #     nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
-            #     self.scaler.step(self.optimizer)
-            #     self.scaler.update()
+            if self.multi_gpu:
+                self.disc_1_optimizer.synchronize()
+                self.disc_1_scaler.unscale_(self.disc_1_optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
+                with self.disc_1_optimizer.skip_synchronize():
+                    self.disc_1_scaler.step(self.disc_1_optimizer)
+                    self.disc_1_scaler.update()
+            else:
+                self.disc_1_scaler.unscale_(self.disc_1_optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
+                self.disc_1_scaler.step(self.disc_1_optimizer)
+                self.disc_1_scaler.update()
         else:
             self.disc_1_scaler.step(self.disc_1_optimizer)
             self.disc_1_scaler.update()
 
         self.disc_2_scaler.scale(disc_2_loss).backward()
         # TODO: Refactor this ugliest code of the year
-        # TODO: Support truncate grads
         if self.truncate_grads:
-            print(f'Truncate grads not supported yet!')
-            # if self.multi_gpu:
-            #     self.optimizer.synchronize()
-            #     self.scaler.unscale_(self.optimizer)
-            #     nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
-            #     with self.optimizer.skip_synchronize():
-            #         self.scaler.step(self.optimizer)
-            #         self.scaler.update()
-            # else:
-            #     self.scaler.unscale_(self.optimizer)
-            #     nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
-            #     self.scaler.step(self.optimizer)
-            #     self.scaler.update()
+            if self.multi_gpu:
+                self.disc_2_optimizer.synchronize()
+                self.disc_2_scaler.unscale_(self.disc_2_optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
+                with self.disc_2_optimizer.skip_synchronize():
+                    self.disc_2_scaler.step(self.disc_2_optimizer)
+                    self.disc_2_scaler.update()
+            else:
+                self.disc_2_scaler.unscale_(self.disc_2_optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
+                self.disc_2_scaler.step(self.disc_2_optimizer)
+                self.disc_2_scaler.update()
         else:
             self.disc_2_scaler.step(self.disc_2_optimizer)
             self.disc_2_scaler.update()
 
         self.disc_3_scaler.scale(disc_3_loss).backward()
         # TODO: Refactor this ugliest code of the year
-        # TODO: Support truncate grads
         if self.truncate_grads:
-            print(f'Truncate grads not supported yet!')
-            # if self.multi_gpu:
-            #     self.optimizer.synchronize()
-            #     self.scaler.unscale_(self.optimizer)
-            #     nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
-            #     with self.optimizer.skip_synchronize():
-            #         self.scaler.step(self.optimizer)
-            #         self.scaler.update()
-            # else:
-            #     self.scaler.unscale_(self.optimizer)
-            #     nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
-            #     self.scaler.step(self.optimizer)
-            #     self.scaler.update()
+            if self.multi_gpu:
+                self.disc_3_optimizer.synchronize()
+                self.disc_3_scaler.unscale_(self.disc_3_optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
+                with self.disc_3_optimizer.skip_synchronize():
+                    self.disc_3_scaler.step(self.disc_3_optimizer)
+                    self.disc_3_scaler.update()
+            else:
+                self.disc_3_scaler.unscale_(self.disc_3_optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
+                self.disc_3_scaler.step(self.disc_3_optimizer)
+                self.disc_3_scaler.update()
         else:
             self.disc_3_scaler.step(self.disc_3_optimizer)
             self.disc_3_scaler.update()
 
         self.disc_4_scaler.scale(disc_4_loss).backward()
         # TODO: Refactor this ugliest code of the year
-        # TODO: Support truncate grads
         if self.truncate_grads:
-            print(f'Truncate grads not supported yet!')
-            # if self.multi_gpu:
-            #     self.optimizer.synchronize()
-            #     self.scaler.unscale_(self.optimizer)
-            #     nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
-            #     with self.optimizer.skip_synchronize():
-            #         self.scaler.step(self.optimizer)
-            #         self.scaler.update()
-            # else:
-            #     self.scaler.unscale_(self.optimizer)
-            #     nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
-            #     self.scaler.step(self.optimizer)
-            #     self.scaler.update()
+            if self.multi_gpu:
+                self.disc_4_optimizer.synchronize()
+                self.disc_4_scaler.unscale_(self.disc_4_optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
+                with self.disc_4_optimizer.skip_synchronize():
+                    self.disc_4_scaler.step(self.disc_4_optimizer)
+                    self.disc_4_scaler.update()
+            else:
+                self.disc_4_scaler.unscale_(self.disc_4_optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
+                self.disc_4_scaler.step(self.disc_4_optimizer)
+                self.disc_4_scaler.update()
         else:
             self.disc_4_scaler.step(self.disc_4_optimizer)
             self.disc_4_scaler.update()
 
         self.actor_scaler.scale(actor_loss).backward()
         # TODO: Refactor this ugliest code of the year
-        # TODO: Support truncate grads
         if self.truncate_grads:
-            print(f'Truncate grads not supported yet!')
-            # if self.multi_gpu:
-            #     self.optimizer.synchronize()
-            #     self.scaler.unscale_(self.optimizer)
-            #     nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
-            #     with self.optimizer.skip_synchronize():
-            #         self.scaler.step(self.optimizer)
-            #         self.scaler.update()
-            # else:
-            #     self.scaler.unscale_(self.optimizer)
-            #     nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
-            #     self.scaler.step(self.optimizer)
-            #     self.scaler.update()
+            if self.multi_gpu:
+                self.actor_optimizer.synchronize()
+                self.actor_scaler.unscale_(self.actor_optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
+                with self.actor_optimizer.skip_synchronize():
+                    self.actor_scaler.step(self.actor_optimizer)
+                    self.actor_scaler.update()
+            else:
+                self.actor_scaler.unscale_(self.actor_optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
+                self.actor_scaler.step(self.actor_optimizer)
+                self.actor_scaler.update()
         else:
             self.actor_scaler.step(self.actor_optimizer)
             self.actor_scaler.update()
 
         self.critic_scaler.scale(c_loss).backward()
         # TODO: Refactor this ugliest code of the year
-        # TODO: Support truncate grads
         if self.truncate_grads:
-            print(f'Truncate grads not supported yet!')
-            # if self.multi_gpu:
-            #     self.optimizer.synchronize()
-            #     self.scaler.unscale_(self.optimizer)
-            #     nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
-            #     with self.optimizer.skip_synchronize():
-            #         self.scaler.step(self.optimizer)
-            #         self.scaler.update()
-            # else:
-            #     self.scaler.unscale_(self.optimizer)
-            #     nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
-            #     self.scaler.step(self.optimizer)
-            #     self.scaler.update()
+            if self.multi_gpu:
+                self.critic_optimizer.synchronize()
+                self.critic_scaler.unscale_(self.critic_optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
+                with self.critic_optimizer.skip_synchronize():
+                    self.critic_scaler.step(self.critic_optimizer)
+                    self.critic_scaler.update()
+            else:
+                self.critic_scaler.unscale_(self.critic_optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
+                self.critic_scaler.step(self.critic_optimizer)
+                self.critic_scaler.update()
         else:
             self.critic_scaler.step(self.critic_optimizer)
             self.critic_scaler.update()
@@ -1010,16 +955,9 @@ class PMP3SetsIPAgent(common_3discs_agent.Common3DiscsAgent):
 
     def _build_pmp3setsip_buffers(self):
         batch_shape = self.experience_buffer.obs_base_shape
-        print(f"batch_shape: {batch_shape}")
-        print(
-            f"self._pmp3setsip_observation_space.shape: {self._pmp3setsip_observation_space.shape}"
-        )
         self.experience_buffer.tensor_dict["pmp3setsip_obs"] = torch.zeros(
             batch_shape + self._pmp3setsip_observation_space.shape,
             device=self.ppo_device,
-        )
-        print(
-            f'self.experience_buffer.tensor_dict["pmp3setsip_obs"].shape: {self.experience_buffer.tensor_dict["pmp3setsip_obs"].shape}'
         )
 
         pmp3setsip_obs_demo_buffer_size = int(
@@ -1064,9 +1002,6 @@ class PMP3SetsIPAgent(common_3discs_agent.Common3DiscsAgent):
 
     def _combine_rewards(self, task_rewards, pmp3setsip_rewards):
         disc_r = pmp3setsip_rewards["disc_rewards"]
-        # print(f'task_rewards.shape: {task_rewards.shape}')
-        # print(
-        #     f'Agent _task_reward_w: {self._task_reward_w} task_rewards[0,95]: {task_rewards[0,95]} _disc_reward_w: {self._disc_reward_w} disc_r[0,95]: {disc_r[0,95]}')
         combined_rewards = (
             self._task_reward_w * task_rewards + +self._disc_reward_w * disc_r
         )
@@ -1207,33 +1142,18 @@ class PMP3SetsIPAgent(common_3discs_agent.Common3DiscsAgent):
                     + (1.0 - sigma_left) * disc_r_left_hand
                 )
             )
-            # print(f'disc_r[0,101]: \t\t{disc_r[0,101]}')
-            # print(f'disc_r_upper[0,101]: \t{disc_r_upper[0,101]}')
-            # print(f'sigma_right[0,101]: \t{sigma_right[0,101]} \tdisc_r_ip_right_hand[0,101]: \t{disc_r_ip_right_hand[0,101]} \tdisc_r_right_hand[0,101]: \t{disc_r_right_hand[0,101]}')
-            # print(f'sigma_left[0,101]: \t{sigma_left[0,101]} \tdisc_r_ip_left_hand[0,101]: \t{disc_r_ip_left_hand[0,101]} \tdisc_r_left_hand[0,101]: \t{disc_r_left_hand[0,101]}')
-            # print(f'------------------------------------')
-            # print(f'sigma_right: {sigma_right.shape} disc_r_right_hand: {disc_r_right_hand.shape} disc_r_ip_right_hand: {disc_r_ip_right_hand.shape} disc_r: {disc_r.shape}')
         return disc_r, disc_r_upper, disc_r_right_hand, disc_r_left_hand, disc_r_ip_right_hand, disc_r_ip_left_hand
 
     def _gaussian_kernel(self, pmp3setsip_obs_hand_rock_rel_pos):
         gamma = 4000.0
-        # print(f'pmp3setsip_obs_hand_rock_rel_pos.shape: {pmp3setsip_obs_hand_rock_rel_pos.shape}')
-        # pmp3setsip_obs_hand_rock_rel_pos = pmp3setsip_obs_hand.view(
-        #     *pmp3setsip_obs_hand.shape[:-1], self._num_pmp3setsip_obs_steps, 75
-        # )[..., 0, 59:62]
-        # pmp3setsip_obs_hand_rock_rel_pos = pmp3setsip_obs_hand[..., 0, 59:62]
         distance = torch.sum(pmp3setsip_obs_hand_rock_rel_pos * pmp3setsip_obs_hand_rock_rel_pos, dim=-1)
-        # print(f'distance.shape: {distance.shape}')
         distance = torch.min(distance, dim=-1)[0]
-        # print(f'distance.shape: {distance.shape}')
         distance = distance ** (1.0 / 2.0)
         distance = distance.unsqueeze(-1)
-        # Apply formula
         phi = torch.ones(distance.shape, device=self.device)
         phi = torch.where(
             distance > 0.10, torch.exp(-gamma * (distance - 0.10) ** 3), phi
         )
-        # print(f'distance[101]: {distance[:,101]} phi[101]: {phi[:,101]}')
         return phi
 
     def _store_replay_pmp3setsip_obs(self, pmp3setsip_obs):

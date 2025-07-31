@@ -370,7 +370,7 @@ class HumanoidRightHandGrabBar(VecTask):
         asset_root = os.path.normpath(
             os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../assets")
         )
-        hand_asset_file = os.path.normpath("pmp_mjcf/right_mpl.xml")
+        hand_asset_file = os.path.normpath("mjcf/right_mpl.xml")
 
         if "asset" in self.cfg["env"]:
             hand_asset_file = os.path.normpath(

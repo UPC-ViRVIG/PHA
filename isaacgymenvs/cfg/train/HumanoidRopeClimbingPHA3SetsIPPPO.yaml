@@ -2,13 +2,13 @@ params:
   seed: ${...seed}
 
   algo:
-    name: pha4setsip_continuous
+    name: pha3setsip_continuous
 
   model:
-    name: continuous_pha4setsip
+    name: continuous_pha3setsip
 
   network:
-    name: pha4setsip
+    name: pha3setsip
     separate: True
 
     space:
@@ -44,7 +44,7 @@ params:
   load_path: ${...checkpoint} # path to the checkpoint to load
 
   config:
-    name: ${resolve_default:HumanoidMonkeyBarsPHANoRPP4SetsIP,${....experiment}}
+    name: ${resolve_default:HumanoidRopeClimbingPHA3SetsIP,${....experiment}}
     full_experiment_name: ${.name}
     env_name: rlgpu
     ppo: True
@@ -65,9 +65,8 @@ params:
     score_to_win: 20000
     max_epochs: ${resolve_default:20000,${....max_iterations}}
     save_best_after: 100
-    save_frequency: 200
+    save_frequency: 1000
     print_stats: True
-    print_disc_prediction: False
     grad_norm: 1.0
     entropy_coef: 0.0
     truncate_grads: False
@@ -79,17 +78,17 @@ params:
     clip_value: False
     seq_len: 4
     bounds_loss_coef: 10
-    pmp4setsip_obs_demo_buffer_size: 200000
-    pmp4setsip_replay_buffer_size: 1000000
-    pmp4setsip_replay_keep_prob: 0.01
-    pmp4setsip_batch_size: 512
-    pmp4setsip_minibatch_size: 4096
+    pmp3setsip_obs_demo_buffer_size: 200000
+    pmp3setsip_replay_buffer_size: 1000000
+    pmp3setsip_replay_keep_prob: 0.01
+    pmp3setsip_batch_size: 512
+    pmp3setsip_minibatch_size: 4096
     disc_coef: 5
     disc_logit_reg: 0.05
     disc_grad_penalty: 5
     disc_reward_scale: 2
     disc_weight_decay: 0.0001
-    normalize_pmp4setsip_input: True
+    normalize_pmp3setsip_input: True
 
     numAMPObsSteps: 2
     numEnvs: 4096
@@ -99,5 +98,7 @@ params:
 
     disc_motion_reference_reward_w: 0.5
     disc_interactive_prior_reward_w: 0.5
-    
-    actions_num: [14, 14, 10, 10]
+
+    actions_num: [14, 10, 10]
+
+    policyPriorCheckpoint: './../HumanoidRightHandGrabBar_2025-04-02_14-07-41_12000.pth'

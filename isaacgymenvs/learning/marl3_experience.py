@@ -2,7 +2,7 @@ from rl_games.common.experience import ExperienceBuffer
 import gym
 import numpy as np
 
-class MARL4ExperienceBuffer(ExperienceBuffer):
+class MARL3ExperienceBuffer(ExperienceBuffer):
     def __init__(self, env_info, algo_info, device, aux_tensor_dict=None):
         self.env_info = env_info
         self.algo_info = algo_info
@@ -42,6 +42,7 @@ class MARL4ExperienceBuffer(ExperienceBuffer):
     
     def _init_from_env_info(self, env_info):
         obs_base_shape = self.obs_base_shape
+        state_base_shape = self.state_base_shape
 
         self.tensor_dict['obses'] = self._create_tensor_from_space(env_info['observation_space'], obs_base_shape)
         if self.has_central_value:
@@ -53,7 +54,6 @@ class MARL4ExperienceBuffer(ExperienceBuffer):
         self.tensor_dict['neglogpacs_0'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(), dtype=np.float32), obs_base_shape)
         self.tensor_dict['neglogpacs_1'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(), dtype=np.float32), obs_base_shape)
         self.tensor_dict['neglogpacs_2'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(), dtype=np.float32), obs_base_shape)
-        self.tensor_dict['neglogpacs_3'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(), dtype=np.float32), obs_base_shape)
         self.tensor_dict['dones'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(), dtype=np.uint8), obs_base_shape)
 
         if self.is_discrete or self.is_multi_discrete:
@@ -62,15 +62,21 @@ class MARL4ExperienceBuffer(ExperienceBuffer):
         if self.use_action_masks:
             assert not self.use_action_masks, "action masks not supported yet!"
         if self.is_continuous:
-            self.tensor_dict['actions_0'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(14,), dtype=np.float32), obs_base_shape)
-            self.tensor_dict['actions_1'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(14,), dtype=np.float32), obs_base_shape)
-            self.tensor_dict['actions_2'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(10,), dtype=np.float32), obs_base_shape)
-            self.tensor_dict['actions_3'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(10,), dtype=np.float32), obs_base_shape)
-            self.tensor_dict['mus_0'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(14,), dtype=np.float32), obs_base_shape)
-            self.tensor_dict['mus_1'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(14,), dtype=np.float32), obs_base_shape)
-            self.tensor_dict['mus_2'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(10,), dtype=np.float32), obs_base_shape)
-            self.tensor_dict['mus_3'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(10,), dtype=np.float32), obs_base_shape)
-            self.tensor_dict['sigmas_0'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(14,), dtype=np.float32), obs_base_shape)
-            self.tensor_dict['sigmas_1'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(14,), dtype=np.float32), obs_base_shape)
-            self.tensor_dict['sigmas_2'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(10,), dtype=np.float32), obs_base_shape)
-            self.tensor_dict['sigmas_3'] = self._create_tensor_from_space(gym.spaces.Box(low=0, high=1,shape=(10,), dtype=np.float32), obs_base_shape)
+            self.tensor_dict['actions_0'] = self._create_tensor_from_space(
+                gym.spaces.Box(low=0, high=1, shape=(14,), dtype=np.float32), obs_base_shape)
+            self.tensor_dict['actions_1'] = self._create_tensor_from_space(
+                gym.spaces.Box(low=0, high=1, shape=(10,), dtype=np.float32), obs_base_shape)
+            self.tensor_dict['actions_2'] = self._create_tensor_from_space(
+                gym.spaces.Box(low=0, high=1, shape=(10,), dtype=np.float32), obs_base_shape)
+            self.tensor_dict['mus_0'] = self._create_tensor_from_space(
+                gym.spaces.Box(low=0, high=1, shape=(14,), dtype=np.float32), obs_base_shape)
+            self.tensor_dict['mus_1'] = self._create_tensor_from_space(
+                gym.spaces.Box(low=0, high=1, shape=(10,), dtype=np.float32), obs_base_shape)
+            self.tensor_dict['mus_2'] = self._create_tensor_from_space(
+                gym.spaces.Box(low=0, high=1, shape=(10,), dtype=np.float32), obs_base_shape)
+            self.tensor_dict['sigmas_0'] = self._create_tensor_from_space(
+                gym.spaces.Box(low=0, high=1, shape=(14,), dtype=np.float32), obs_base_shape)
+            self.tensor_dict['sigmas_1'] = self._create_tensor_from_space(
+                gym.spaces.Box(low=0, high=1, shape=(10,), dtype=np.float32), obs_base_shape)
+            self.tensor_dict['sigmas_2'] = self._create_tensor_from_space(
+                gym.spaces.Box(low=0, high=1, shape=(10,), dtype=np.float32), obs_base_shape)

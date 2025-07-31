@@ -44,7 +44,7 @@ params:
   load_path: ${...checkpoint} # path to the checkpoint to load
 
   config:
-    name: ${resolve_default:HumanoidRockBoulderingPHA4SetsIP,${....experiment}}
+    name: ${resolve_default:HumanoidRockBoulderingPHANoRPP4SetsIP,${....experiment}}
     full_experiment_name: ${.name}
     env_name: rlgpu
     ppo: True
