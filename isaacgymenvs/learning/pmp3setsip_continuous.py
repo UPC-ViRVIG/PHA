@@ -1118,9 +1118,6 @@ class PMP3SetsIPAgent(common_3discs_agent.Common3DiscsAgent):
 
             sigma_right = self._gaussian_kernel(rel_pos_pmp3setsip_obs_ip_right_hand)
             sigma_left = self._gaussian_kernel(rel_pos_pmp3setsip_obs_ip_left_hand)
-            # TODO: Update distance from hand to point to hand to bar
-            sigma_right = 1.0
-            sigma_left = 1.0
 
             disc_r = self._disc_reward_scale * (
                 disc_r_upper
