@@ -111,12 +111,13 @@ class HumanoidRightHandGrab(VecTask):
         self.reset_time = self.cfg["env"].get("resetTime", -1.0)
 
         self.object_type = self.cfg["env"]["objectType"]
-        assert self.object_type in ["block", "egg", "pen"]
+        assert self.object_type in ["rock", "block", "egg", "pen"]
 
         self.asset_files_dict = {
             "block": "urdf/objects/cube_multicolor.urdf",
             "egg": "mjcf/open_ai_assets/hand/egg.xml",
             "pen": "mjcf/open_ai_assets/hand/pen.xml",
+            "rock": "mjcf/rock.xml",
         }
 
         if "asset" in self.cfg["env"]:

@@ -65,7 +65,7 @@ params:
     score_to_win: 20000
     max_epochs: ${resolve_default:20000,${....max_iterations}}
     save_best_after: 100
-    save_frequency: 1000
+    save_frequency: 200
     print_stats: True
     grad_norm: 1.0
     entropy_coef: 0.0
@@ -101,4 +101,4 @@ params:
 
     actions_num: [14, 10, 10]
 
-    policyPriorCheckpoint: './../HumanoidRightHandGrabBar_2025-04-02_14-07-41_12000.pth'
+    policyPriorCheckpoint: './../pretrained_models/skill_training/HumanoidRightHandGrabBar_2025-04-02_14-07-41_12000.pth'

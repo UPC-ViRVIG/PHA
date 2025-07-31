@@ -109,26 +109,6 @@ class HumanoidRightHandGrabBar(VecTask):
         self._enable_early_termination = self.cfg["env"]["enableEarlyTermination"]
         self.reset_time = self.cfg["env"].get("resetTime", -1.0)
 
-        self.object_type = self.cfg["env"]["objectType"]
-        assert self.object_type in ["block", "egg", "pen"]
-
-        self.asset_files_dict = {
-            "block": "urdf/objects/cube_multicolor.urdf",
-            "egg": "mjcf/open_ai_assets/hand/egg.xml",
-            "pen": "mjcf/open_ai_assets/hand/pen.xml",
-        }
-
-        if "asset" in self.cfg["env"]:
-            self.asset_files_dict["block"] = self.cfg["env"]["asset"].get(
-                "assetFileNameBlock", self.asset_files_dict["block"]
-            )
-            self.asset_files_dict["egg"] = self.cfg["env"]["asset"].get(
-                "assetFileNameEgg", self.asset_files_dict["egg"]
-            )
-            self.asset_files_dict["pen"] = self.cfg["env"]["asset"].get(
-                "assetFileNamePen", self.asset_files_dict["pen"]
-            )
-
         self.up_axis = "z"
 
         self.fingertips = [

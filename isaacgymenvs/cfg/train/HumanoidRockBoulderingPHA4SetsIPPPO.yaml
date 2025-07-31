@@ -102,4 +102,4 @@ params:
     
     actions_num: [14, 14, 10, 10]
 
-    policyPriorCheckpoint: './../HumanoidRightHandGrab_2025-03-23_13-44-42_8600.pth'
+    policyPriorCheckpoint: './../pretrained_models/skill_training/HumanoidRightHandGrab_2025-03-23_13-44-42_8600.pth'

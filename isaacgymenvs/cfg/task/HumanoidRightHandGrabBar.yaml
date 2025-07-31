@@ -26,14 +26,6 @@ env:
   terminationHeight: 0.5
   enableEarlyTermination: True
 
-  objectType: "egg" # can be block, egg or pen
-
-  asset:
-    assetFileName: "mjcf/right_mpl.xml"
-    assetFileNameBlock: "urdf/objects/cube_multicolor.urdf"
-    assetFileNameEgg: "mjcf/open_ai_assets/hand/egg.xml"
-    assetFileNamePen: "mjcf/open_ai_assets/hand/pen.xml"
-
   plane:
     staticFriction: 1.0
     dynamicFriction: 1.0

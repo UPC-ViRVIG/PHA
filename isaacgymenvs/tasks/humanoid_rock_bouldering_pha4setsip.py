@@ -865,8 +865,8 @@ class HumanoidRockBoulderingPHA4SetsIP(HumanoidPMPBase):
         return obs
 
     def _load_rock_asset(self):
-        asset_root = "../assets/mjcf/open_ai_assets/hand"
-        asset_file = "egg.xml"
+        asset_root = "../assets/mjcf/"
+        asset_file = "rock.xml"
 
         asset_options = gymapi.AssetOptions()
         asset_options.fix_base_link = True
