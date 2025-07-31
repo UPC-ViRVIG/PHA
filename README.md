@@ -21,6 +21,18 @@ pip install -e .
 
 ---
 
+## Pretrained Models
+
+Download the contents of [`pretrained_models`](https://huggingface.co/locoxsoco/pha/tree/main) from our Hugging Face model page and move them to the `isaacgymenvs/` directory.
+
+---
+
+## Hand Demonstration Data
+
+To run the task training stage, you can use the hand motion reference from [`PMP hand demonstration data`](https://drive.google.com/file/d/1h-FYRUoiSnaBExxLJx-ngBprk_26wS6c/view). After downloading, place the file in `assets/amp/motions/`.
+
+---
+
 ## Training
 Our method consists of two stages: skill training and task training. In the first stage, we train body-part agents to learn skills such as grabbing and climbing. In the second stage, we train multi-agent full-body humanoids to perform complex tasks like rope climbing, monkey bars, and rock bouldering.
 
