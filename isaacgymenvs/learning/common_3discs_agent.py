@@ -747,7 +747,6 @@ class Common3DiscsAgent(a2c_continuous.A2CAgent):
         action_space = self.env_info['action_space']
         self.actions_num = action_space.shape[0]
 
-        # todo introduce device instead of cuda()
         self.actions_low = torch.from_numpy(action_space.low.copy()).float().to(self.ppo_device)
         self.actions_high = torch.from_numpy(action_space.high.copy()).float().to(self.ppo_device)
         return

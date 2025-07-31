@@ -100,11 +100,8 @@ class HARL3Player(players.PpoPlayerContinuous):
             for n in range(self.max_steps):
                 obs_dict, done_env_ids = self._env_reset_done()
 
-                # TODO: Support action masks
                 if has_masks:
                     print(f'action masks not supported yet!')
-                    # masks = self.env.get_action_mask()
-                    # action = self.get_masked_action(obs_dict, masks, is_determenistic)
                 else:
                     action = self.get_action(obs_dict, is_determenistic)
                 obs_dict, r, done, info =  self.env_step(self.env, action)
