@@ -1,5 +1,5 @@
 # PHA: Part-wise Heterogeneous Agents with Reusable Policy Priors for Motion Synthesis
-[Technical Paper](https://drive.google.com/file/d/1QuWjtsKjtBR9YYVdAWX2R2sKK0DvM0Ni/view) | [Videos](https://youtu.be/rlMMrCgDA8o)
+[Technical Paper](https://drive.google.com/file/d/1QuWjtsKjtBR9YYVdAWX2R2sKK0DvM0Ni/view) | [Video](https://youtu.be/rlMMrCgDA8o)
 
 ![](./images/teaser.png)
 
