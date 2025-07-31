@@ -29,7 +29,7 @@ Download the contents of [`pretrained_models`](https://huggingface.co/locoxsoco/
 
 ## Hand Demonstration Data
 
-To run the task training stage, you can use the hand motion reference from [`PMP hand demonstration data`](https://drive.google.com/file/d/1h-FYRUoiSnaBExxLJx-ngBprk_26wS6c/view). After downloading, place the file in `assets/amp/motions/`.
+To run the task training stage, you can use the hand motion reference from [`PMP hand demonstration data`](https://drive.google.com/file/d/1h-FYRUoiSnaBExxLJx-ngBprk_26wS6c/view) [[Bae et al., 2023]](https://dl.acm.org/doi/10.1145/3588432.3591487). After downloading, place the file in `assets/amp/motions/`.
 
 ---
 
